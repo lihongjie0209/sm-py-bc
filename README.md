@@ -3,6 +3,7 @@
 **完整、生产就绪的中国国家密码算法标准（SM2、SM3、SM4）纯 Python 实现，零外部依赖。**
 
 [![CI](https://github.com/lihongjie0209/sm-py-bc/actions/workflows/ci.yml/badge.svg)](https://github.com/lihongjie0209/sm-py-bc/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/sm-py-bc.svg)](https://pypi.org/project/sm-py-bc/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Tests: 200+ Passing](https://img.shields.io/badge/tests-200%2B%20passing-brightgreen.svg)](tests/)
@@ -57,7 +58,7 @@ plaintext = cipher.decrypt(ciphertext)
 ## 📦 安装
 
 ```bash
-# 从 PyPI 安装（即将上线）
+# 从 PyPI 安装（推荐）
 pip install sm-py-bc
 
 # 或从 GitHub 克隆
@@ -67,6 +68,12 @@ pip install -e .
 
 # 无需额外依赖！
 # 只需要 Python 3.10 或更高版本
+```
+
+验证安装:
+```python
+import sm_bc
+print(sm_bc.__version__)  # 0.1.0
 ```
 
 ---
