@@ -1,6 +1,6 @@
 [project]
 name = "sm-py-bc"
-version = "0.1.5"
+version = "0.1.6"
 description = "SM2/SM3/SM4 implementation in Python based on Bouncy Castle"
 readme = "README.md"
 requires-python = ">=3.10"
