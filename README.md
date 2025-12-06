@@ -2,9 +2,10 @@
 
 **A complete, production-ready implementation of Chinese national cryptographic standards (SM2, SM3, SM4) in pure Python with zero external dependencies.**
 
+[![CI](https://github.com/lihongjie0209/sm-py-bc/actions/workflows/ci.yml/badge.svg)](https://github.com/lihongjie0209/sm-py-bc/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests: 183 Passing](https://img.shields.io/badge/tests-183%20passing-brightgreen.svg)](tests/)
+[![Tests: 200+ Passing](https://img.shields.io/badge/tests-200%2B%20passing-brightgreen.svg)](tests/)
 
 ---
 
@@ -56,9 +57,13 @@ plaintext = cipher.decrypt(ciphertext)
 ## 📦 Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/sm-py-bc.git
+# From PyPI (coming soon)
+pip install sm-py-bc
+
+# Or clone from GitHub
+git clone https://github.com/lihongjie0209/sm-py-bc.git
 cd sm-py-bc
+pip install -e .
 
 # No additional dependencies needed!
 # Just Python 3.10 or higher
@@ -486,7 +491,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- Based on reference implementations from [sm-js-bc](https://github.com/yourusername/sm-js-bc) (TypeScript)
+- Based on reference implementations from [sm-js-bc](https://github.com/lihongjie0209/sm-js-bc) (TypeScript)
 - Inspired by Bouncy Castle cryptographic library
 - Implements Chinese national cryptographic standards
 
@@ -500,9 +505,9 @@ This software implements Chinese national cryptographic standards. Users are res
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/sm-py-bc/issues)
-- **Documentation**: [Full Documentation](docs/)
-- **Examples**: [Examples Directory](examples/)
+- **Issues**: [GitHub Issues](https://github.com/lihongjie0209/sm-py-bc/issues)
+- **Documentation**: [Full Documentation](https://github.com/lihongjie0209/sm-py-bc/tree/main/docs)
+- **Examples**: [Examples Directory](https://github.com/lihongjie0209/sm-py-bc/tree/main/examples)
 
 ---
 
