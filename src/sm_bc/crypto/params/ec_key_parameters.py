@@ -5,3 +5,7 @@ class ECKeyParameters(AsymmetricKeyParameter):
     def __init__(self, is_private: bool, parameters: ECDomainParameters):
         super().__init__(is_private)
         self.parameters = parameters
+    
+    def get_parameters(self) -> ECDomainParameters:
+        """Get the domain parameters."""
+        return self.parameters

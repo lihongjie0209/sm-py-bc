@@ -12,3 +12,7 @@ class ECPublicKeyParameters(ECKeyParameters):
         if not q.is_valid():
              raise ValueError("Point not on curve")
         return q
+    
+    def get_Q(self) -> ECPoint:
+        """Get the public key point Q."""
+        return self.q

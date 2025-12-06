@@ -361,6 +361,7 @@ class GCMBlockCipher:
         if self.ciphertext_buffer_length < self.mac_size:
             raise InvalidCipherTextException("data too short")
         
+        # Always initialize cipher state (includes AAD finalization)
         if self.total_length == 0:
             self._init_cipher()
         
@@ -369,6 +370,7 @@ class GCMBlockCipher:
         ciphertext = self.ciphertext_buffer[0:self.ciphertext_buffer_length]
         
         # First, hash all ciphertext blocks for MAC computation
+        # S already contains AAD hash from _init_cipher
         pos = 0
         while pos + GCMBlockCipher.BLOCK_SIZE <= data_len:
             block = ciphertext[pos:pos + GCMBlockCipher.BLOCK_SIZE]

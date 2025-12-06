@@ -1,6 +1,6 @@
 [project]
 name = "sm-py-bc"
-version = "0.1.0"
+version = "0.1.1"
 description = "SM2/SM3/SM4 implementation in Python based on Bouncy Castle"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -23,10 +23,10 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-"Homepage" = "https://github.com/yourusername/sm-py-bc"
-"Bug Tracker" = "https://github.com/yourusername/sm-py-bc/issues"
-"Documentation" = "https://github.com/yourusername/sm-py-bc/tree/main/docs"
-"Source Code" = "https://github.com/yourusername/sm-py-bc"
+"Homepage" = "https://github.com/lihongjie0209/sm-py-bc"
+"Bug Tracker" = "https://github.com/lihongjie0209/sm-py-bc/issues"
+"Documentation" = "https://github.com/lihongjie0209/sm-py-bc/tree/master/docs"
+"Source Code" = "https://github.com/lihongjie0209/sm-py-bc"
 
 [project.optional-dependencies]
 test = [

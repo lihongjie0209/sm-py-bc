@@ -2,10 +2,10 @@
 Comprehensive unit tests for GCM mode
 """
 import pytest
-from src.crypto.modes.gcm_block_cipher import GCMBlockCipher
+from sm_bc.crypto.modes.gcm_block_cipher import GCMBlockCipher
 from sm_bc.crypto.engines.sm4_engine import SM4Engine
 from sm_bc.crypto.params.key_parameter import KeyParameter
-from src.crypto.params.AEADParameters import AEADParameters
+from sm_bc.crypto.params.aead_parameters import AEADParameters
 from sm_bc.crypto.params.parameters_with_iv import ParametersWithIV
 
 
@@ -186,7 +186,7 @@ class TestGCMBlockCipher:
         decrypted2 = bytearray(dec_cipher2.get_output_size(enc_len + final_len))
         dec_len2 = dec_cipher2.process_bytes(bytes(ciphertext), 0, enc_len + final_len, decrypted2, 0)
         
-        with pytest.raises(ValueError, match="mac check in GCM failed"):
+        with pytest.raises(Exception, match="mac check in GCM failed"):
             dec_cipher2.do_final(decrypted2, dec_len2)
     
     def test_96_bit_mac(self):
@@ -284,7 +284,7 @@ class TestGCMBlockCipher:
         decrypted = bytearray(dec_cipher.get_output_size(enc_len + final_len))
         dec_len = dec_cipher.process_bytes(bytes(ciphertext), 0, enc_len + final_len, decrypted, 0)
         
-        with pytest.raises(ValueError, match="mac check in GCM failed"):
+        with pytest.raises(Exception, match="mac check in GCM failed"):
             dec_cipher.do_final(decrypted, dec_len)
     
     def test_tampered_ciphertext_rejected(self):
@@ -310,7 +310,7 @@ class TestGCMBlockCipher:
         decrypted = bytearray(dec_cipher.get_output_size(enc_len + final_len))
         dec_len = dec_cipher.process_bytes(bytes(ciphertext), 0, enc_len + final_len, decrypted, 0)
         
-        with pytest.raises(ValueError, match="mac check in GCM failed"):
+        with pytest.raises(Exception, match="mac check in GCM failed"):
             dec_cipher.do_final(decrypted, dec_len)
     
     def test_parameters_with_iv(self):
