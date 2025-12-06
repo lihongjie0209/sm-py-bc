@@ -119,7 +119,7 @@ jobs:
           from sm_bc.crypto.engines import SM4Engine
           from sm_bc.crypto.modes import ECBBlockCipher
           from sm_bc.crypto.paddings import PKCS7Padding
-          from sm_bc.crypto.cipher import PaddedBufferedBlockCipher
+          from sm_bc.crypto.paddings.padded_buffered_block_cipher import PaddedBufferedBlockCipher
           from sm_bc.crypto.params import KeyParameter
           import secrets
           
