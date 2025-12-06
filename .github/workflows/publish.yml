@@ -21,7 +21,6 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
     
     steps:
@@ -46,13 +45,10 @@ jobs:
       
       - name: Publish to Test PyPI
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.repository == 'testpypi'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        run: |
+          twine upload --repository testpypi dist/* --username __token__ --password ${{ secrets.TEST_PYPI_API_TOKEN }}
       
       - name: Publish to PyPI
         if: github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.repository == 'pypi')
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          twine upload dist/* --username __token__ --password ${{ secrets.PYPI_API_TOKEN }}
