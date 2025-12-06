@@ -86,27 +86,79 @@ jobs:
           python -c "import sm_bc; print(f'✓ License: {sm_bc.__license__}')"
           echo "✓ All imports successful!"
       
-      - name: Test basic functionality
+      - name: Checkout examples
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: examples
+          
+      - name: Test SM3 example
         run: |
-          echo "🧪 Testing basic functionality..."
-          python -c "
+          echo "🧪 Testing SM3 hash example..."
+          cat > test_sm3.py << 'EOF'
           from sm_bc.crypto.digests import SM3Digest
           
-          # Test SM3 (simple and reliable)
+          # SM3 哈希测试
           digest = SM3Digest()
-          digest.update(b'Hello, SM3!')
-          hash_output = bytearray(32)
+          data = 'Hello, SM3!'.encode('utf-8')
+          digest.update_bytes(data, 0, len(data))
+          
+          hash_output = bytearray(digest.get_digest_size())
           digest.do_final(hash_output, 0)
-          print('✓ SM3 hashing works')
           
-          # Test imports
-          from sm_bc.crypto.cipher import create_sm4_cipher
-          print('✓ SM4 cipher module imports')
+          print('✓ SM3 Hash:', hash_output.hex())
+          assert len(hash_output) == 32, "SM3 hash should be 32 bytes"
+          print('✓ SM3 test passed')
+          EOF
           
+          python test_sm3.py
+      
+      - name: Test SM4 ECB example
+        run: |
+          echo "🧪 Testing SM4 ECB example..."
+          cat > test_sm4.py << 'EOF'
+          from sm_bc.crypto.engines import SM4Engine
+          from sm_bc.crypto.modes import ECBBlockCipher
+          from sm_bc.crypto.paddings import PKCS7Padding
+          from sm_bc.crypto.cipher import PaddedBufferedBlockCipher
+          from sm_bc.crypto.params import KeyParameter
+          import secrets
+          
+          # SM4 ECB 加密测试
+          key = secrets.token_bytes(16)
+          plaintext = 'Hello, SM4!'.encode('utf-8')
+          
+          cipher = PaddedBufferedBlockCipher(
+              ECBBlockCipher(SM4Engine()),
+              PKCS7Padding()
+          )
+          cipher.init(True, KeyParameter(key))
+          
+          output = bytearray(cipher.get_output_size(len(plaintext)))
+          length = cipher.process_bytes(plaintext, 0, len(plaintext), output, 0)
+          length += cipher.do_final(output, length)
+          ciphertext = bytes(output[:length])
+          
+          # 解密
+          cipher.init(False, KeyParameter(key))
+          decrypted = bytearray(cipher.get_output_size(len(ciphertext)))
+          dec_len = cipher.process_bytes(ciphertext, 0, len(ciphertext), decrypted, 0)
+          dec_len += cipher.do_final(decrypted, dec_len)
+          
+          assert bytes(decrypted[:dec_len]) == plaintext, "Decryption failed"
+          print('✓ SM4 ECB encryption/decryption passed')
+          EOF
+          
+          python test_sm4.py
+      
+      - name: Test module imports
+        run: |
+          echo "🧪 Testing module imports..."
+          python -c "
           from sm_bc.crypto.signers import SM2Signer
-          print('✓ SM2 signer module imports')
-          
-          print('✓ Basic functionality verified!')
+          from sm_bc.crypto.cipher import create_sm4_cipher
+          from sm_bc.crypto.digests import SM3Digest
+          from sm_bc.math.ec_curve import SM2P256V1Curve
+          print('✓ All core modules import successfully')
           "
       
       - name: Verify version matches tag
