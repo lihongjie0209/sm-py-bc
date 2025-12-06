@@ -21,6 +21,7 @@ jobs:
   build-and-publish:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
       contents: read
     
     steps:
@@ -51,10 +52,7 @@ jobs:
         run: |
           twine upload --repository testpypi dist/*
       
-      - name: Publish to PyPI
+      - name: Publish to PyPI (Trusted Publishing)
         if: github.event_name == 'push' || github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.repository == 'pypi')
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          twine upload dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Trusted Publishing - 无需 password，自动使用 OIDC token
