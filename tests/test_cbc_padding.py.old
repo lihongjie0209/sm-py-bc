@@ -1,0 +1,180 @@
+"""Tests for padding with CBC mode using PaddedBufferedBlockCipher"""
+
+import pytest
+from sm_bc.crypto.engines.sm4_engine import SM4Engine
+from sm_bc.crypto.modes.cbc_block_cipher import CBCBlockCipher
+from sm_bc.crypto.paddings import PKCS7Padding, ZeroBytePadding, PaddedBufferedBlockCipher
+from sm_bc.crypto.params.key_parameter import KeyParameter
+from sm_bc.crypto.params.parameters_with_iv import ParametersWithIV
+
+
+class TestPaddingWithCBC:
+    """Test padding schemes with CBC mode"""
+    
+    @pytest.fixture
+    def setup(self):
+        """Set up test fixtures"""
+        return {
+            'key': bytes.fromhex('0123456789ABCDEFFEDCBA9876543210'),
+            'iv': bytes.fromhex('00000000000000000000000000000000')
+        }
+    
+    def test_pkcs7_padding_single_block(self, setup):
+        """Test PKCS7 padding with data that fits in one block"""
+        plaintext = b'Hello World!'  # 12 bytes, will be padded to 16
+        
+        # Encryption
+        cipher = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher.init(True, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output = bytearray(cipher.get_output_size(len(plaintext)))
+        out_len = cipher.process_bytes(plaintext, 0, len(plaintext), output, 0)
+        out_len += cipher.do_final(output, out_len)
+        
+        ciphertext = bytes(output[:out_len])
+        assert len(ciphertext) == 16  # One padded block
+        
+        # Decryption
+        cipher2 = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher2.init(False, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output2 = bytearray(cipher2.get_output_size(len(ciphertext)))
+        out_len2 = cipher2.process_bytes(ciphertext, 0, len(ciphertext), output2, 0)
+        out_len2 += cipher2.do_final(output2, out_len2)
+        
+        decrypted = bytes(output2[:out_len2])
+        assert decrypted == plaintext
+    
+    def test_pkcs7_padding_exact_block(self, setup):
+        """Test PKCS7 padding with data that is exactly one block"""
+        plaintext = b'0123456789ABCDEF'  # Exactly 16 bytes
+        
+        # Encryption
+        cipher = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher.init(True, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output = bytearray(cipher.get_output_size(len(plaintext)))
+        out_len = cipher.process_bytes(plaintext, 0, len(plaintext), output, 0)
+        out_len += cipher.do_final(output, out_len)
+        
+        ciphertext = bytes(output[:out_len])
+        assert len(ciphertext) == 32  # Two blocks (original + padding block)
+        
+        # Decryption
+        cipher2 = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher2.init(False, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output2 = bytearray(cipher2.get_output_size(len(ciphertext)))
+        out_len2 = cipher2.process_bytes(ciphertext, 0, len(ciphertext), output2, 0)
+        out_len2 += cipher2.do_final(output2, out_len2)
+        
+        decrypted = bytes(output2[:out_len2])
+        assert decrypted == plaintext
+    
+    def test_pkcs7_padding_multiple_blocks(self, setup):
+        """Test PKCS7 padding with data spanning multiple blocks"""
+        plaintext = b'The quick brown fox jumps over the lazy dog'  # 44 bytes
+        
+        # Encryption
+        cipher = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher.init(True, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output = bytearray(cipher.get_output_size(len(plaintext)))
+        out_len = cipher.process_bytes(plaintext, 0, len(plaintext), output, 0)
+        out_len += cipher.do_final(output, out_len)
+        
+        ciphertext = bytes(output[:out_len])
+        assert len(ciphertext) == 48  # 3 blocks (44 + 4 padding = 48)
+        
+        # Decryption
+        cipher2 = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher2.init(False, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output2 = bytearray(cipher2.get_output_size(len(ciphertext)))
+        out_len2 = cipher2.process_bytes(ciphertext, 0, len(ciphertext), output2, 0)
+        out_len2 += cipher2.do_final(output2, out_len2)
+        
+        decrypted = bytes(output2[:out_len2])
+        assert decrypted == plaintext
+    
+    def test_zero_byte_padding(self, setup):
+        """Test ZeroByte padding"""
+        plaintext = b'Hello World!'  # 12 bytes, will be padded to 16
+        
+        # Encryption
+        cipher = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            ZeroBytePadding()
+        )
+        cipher.init(True, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output = bytearray(cipher.get_output_size(len(plaintext)))
+        out_len = cipher.process_bytes(plaintext, 0, len(plaintext), output, 0)
+        out_len += cipher.do_final(output, out_len)
+        
+        ciphertext = bytes(output[:out_len])
+        assert len(ciphertext) == 16
+        
+        # Decryption
+        cipher2 = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            ZeroBytePadding()
+        )
+        cipher2.init(False, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output2 = bytearray(cipher2.get_output_size(len(ciphertext)))
+        out_len2 = cipher2.process_bytes(ciphertext, 0, len(ciphertext), output2, 0)
+        out_len2 += cipher2.do_final(output2, out_len2)
+        
+        decrypted = bytes(output2[:out_len2])
+        assert decrypted == plaintext
+    
+    def test_empty_input(self, setup):
+        """Test with empty input"""
+        plaintext = b''
+        
+        # Encryption
+        cipher = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher.init(True, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output = bytearray(cipher.get_output_size(len(plaintext)))
+        out_len = cipher.process_bytes(plaintext, 0, len(plaintext), output, 0)
+        out_len += cipher.do_final(output, out_len)
+        
+        ciphertext = bytes(output[:out_len])
+        assert len(ciphertext) == 16  # One padding block
+        
+        # Decryption
+        cipher2 = PaddedBufferedBlockCipher(
+            CBCBlockCipher(SM4Engine()),
+            PKCS7Padding()
+        )
+        cipher2.init(False, ParametersWithIV(KeyParameter(setup['key']), setup['iv']))
+        
+        output2 = bytearray(cipher2.get_output_size(len(ciphertext)))
+        out_len2 = cipher2.process_bytes(ciphertext, 0, len(ciphertext), output2, 0)
+        out_len2 += cipher2.do_final(output2, out_len2)
+        
+        decrypted = bytes(output2[:out_len2])
+        assert decrypted == plaintext

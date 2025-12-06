@@ -1,0 +1,161 @@
+"""Tests for padding implementations."""
+
+import pytest
+from sm_bc.crypto.paddings import PKCS7Padding, ZeroBytePadding
+from sm_bc.crypto.paddings.iso7816_4_padding import ISO7816d4Padding
+from sm_bc.exceptions.invalid_cipher_text_exception import InvalidCipherTextException
+
+
+class TestPKCS7Padding:
+    """Test PKCS7 padding."""
+    
+    def test_padding_name(self):
+        """Test padding name."""
+        padding = PKCS7Padding()
+        assert padding.get_padding_name() == "PKCS7"
+    
+    def test_add_padding_full_block(self):
+        """Test adding padding to a full block (16 bytes)."""
+        padding = PKCS7Padding()
+        data = bytearray(16)
+        added = padding.add_padding(data, 0)
+        
+        assert added == 16
+        assert all(b == 16 for b in data)
+    
+    def test_add_padding_partial_block(self):
+        """Test adding padding to a partial block."""
+        padding = PKCS7Padding()
+        data = bytearray([0x01, 0x02, 0x03] + [0] * 13)
+        added = padding.add_padding(data, 3)
+        
+        assert added == 13
+        assert data[:3] == bytearray([0x01, 0x02, 0x03])
+        assert all(b == 13 for b in data[3:])
+    
+    def test_pad_count_valid(self):
+        """Test counting padding bytes."""
+        padding = PKCS7Padding()
+        
+        # 5 bytes of padding
+        data = bytes([0x01, 0x02, 0x03, 0x05, 0x05, 0x05, 0x05, 0x05])
+        assert padding.pad_count(data) == 5
+        
+        # Full block of padding
+        data = bytes([0x10] * 16)
+        assert padding.pad_count(data) == 16
+    
+    def test_pad_count_invalid_too_large(self):
+        """Test invalid padding - count too large."""
+        padding = PKCS7Padding()
+        data = bytes([0x01, 0x02, 0x11])  # count=17 but only 3 bytes
+        
+        with pytest.raises(InvalidCipherTextException, match="pad block corrupted"):
+            padding.pad_count(data)
+    
+    def test_pad_count_invalid_zero(self):
+        """Test invalid padding - count is zero."""
+        padding = PKCS7Padding()
+        data = bytes([0x01, 0x02, 0x00])
+        
+        with pytest.raises(InvalidCipherTextException, match="pad block corrupted"):
+            padding.pad_count(data)
+    
+    def test_pad_count_invalid_mismatch(self):
+        """Test invalid padding - bytes don't match count."""
+        padding = PKCS7Padding()
+        data = bytes([0x01, 0x02, 0x03, 0x05, 0x04])  # last says 5 but previous is 4
+        
+        with pytest.raises(InvalidCipherTextException, match="pad block corrupted"):
+            padding.pad_count(data)
+    
+    def test_round_trip(self):
+        """Test add and remove padding."""
+        padding = PKCS7Padding()
+        
+        # Start with some data
+        original = bytearray([0x01, 0x02, 0x03])
+        padded = bytearray(original + bytearray(13))
+        
+        # Add padding
+        added = padding.add_padding(padded, len(original))
+        assert added == 13
+        
+        # Count padding
+        count = padding.pad_count(bytes(padded))
+        assert count == 13
+        
+        # Verify original data is intact
+        assert padded[:len(original)] == original
+
+
+class TestZeroBytePadding:
+    """Test Zero Byte padding."""
+    
+    def test_padding_name(self):
+        """Test padding name."""
+        padding = ZeroBytePadding()
+        assert padding.get_padding_name() == "ZeroByte"
+    
+    def test_add_padding_full_block(self):
+        """Test adding padding to a full block."""
+        padding = ZeroBytePadding()
+        data = bytearray(16)
+        added = padding.add_padding(data, 0)
+        
+        assert added == 16
+        assert all(b == 0 for b in data)
+    
+    def test_add_padding_partial_block(self):
+        """Test adding padding to a partial block."""
+        padding = ZeroBytePadding()
+        data = bytearray([0x01, 0x02, 0x03] + [0xFF] * 13)
+        added = padding.add_padding(data, 3)
+        
+        assert added == 13
+        assert data[:3] == bytearray([0x01, 0x02, 0x03])
+        assert all(b == 0 for b in data[3:])
+    
+    def test_pad_count_no_padding(self):
+        """Test counting padding bytes with no padding."""
+        padding = ZeroBytePadding()
+        data = bytes([0x01, 0x02, 0x03, 0xFF])
+        assert padding.pad_count(data) == 0
+    
+    def test_pad_count_with_padding(self):
+        """Test counting padding bytes."""
+        padding = ZeroBytePadding()
+        
+        # 5 bytes of padding
+        data = bytes([0x01, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00])
+        assert padding.pad_count(data) == 5
+        
+        # Full block of padding
+        data = bytes([0x00] * 16)
+        assert padding.pad_count(data) == 16
+    
+    def test_pad_count_mixed(self):
+        """Test padding count with zeros in data."""
+        padding = ZeroBytePadding()
+        # Data has zeros in middle, but trailing zeros are padding
+        data = bytes([0x01, 0x00, 0x02, 0x00, 0x00])
+        assert padding.pad_count(data) == 2
+    
+    def test_round_trip(self):
+        """Test add and remove padding."""
+        padding = ZeroBytePadding()
+        
+        # Start with some data (no trailing zeros)
+        original = bytearray([0x01, 0x02, 0x03, 0xFF])
+        padded = bytearray(original + bytearray(12))
+        
+        # Add padding
+        added = padding.add_padding(padded, len(original))
+        assert added == 12
+        
+        # Count padding
+        count = padding.pad_count(bytes(padded))
+        assert count == 12
+        
+        # Verify original data is intact
+        assert padded[:len(original)] == original
