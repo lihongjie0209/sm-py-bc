@@ -233,7 +233,12 @@ class ZUCEngine(StreamCipher):
         self._lfsr_with_work_mode()
     
     def _make_u31(self, value: int) -> int:
-        """Make a 31-bit value from a 32-bit input by masking the MSB."""
+        """
+        Make a 31-bit value from input, handling GF(2^31-1) arithmetic.
+        
+        In GF(2^31-1), the modulus is 2^31-1 (0x7FFFFFFF).
+        Simple masking: value & 0x7FFFFFFF gives us a value in [0, 2^31-1).
+        """
         return value & 0x7FFFFFFF
     
     def _lfsr_with_init_mode(self, u: int) -> None:
@@ -241,8 +246,9 @@ class ZUCEngine(StreamCipher):
         LFSR update in initialization mode with feedback.
         
         Args:
-            u: Feedback value
+            u: Feedback value from F function
         """
+        # Follows Bouncy Castle Java / sm-js-bc implementation
         s16 = self.lfsr[15]
         s0 = self.lfsr[0]
         
@@ -261,7 +267,10 @@ class ZUCEngine(StreamCipher):
         self.lfsr[15] = self._make_u31(v + s16_mod)
     
     def _lfsr_with_work_mode(self) -> None:
-        """LFSR update in working mode."""
+        """
+        LFSR update in working mode (no external feedback).
+        """
+        # Follows Bouncy Castle Java / sm-js-bc implementation
         s16 = self.lfsr[15]
         s0 = self.lfsr[0]
         
