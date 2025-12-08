@@ -1,8 +1,10 @@
-# Next Steps Summary - Post ZUC Skip
+# Next Steps Summary - v0.2.0 + v0.3.0 Complete
 
 ## Current Status
 
-### ✅ Completed in This PR (v0.2.0 Ready)
+### ✅ Completed in This PR (v0.2.0 + v0.3.0)
+
+**v0.2.0: API & HMAC-SM3**
 1. **API Consistency Improvements**
    - SM3Digest: reset(Memoable) method overload
    - SM2Signer: calculate_e() protected method
@@ -14,23 +16,37 @@
    - 12 comprehensive tests
    - 100% test pass rate
 
-3. **Documentation**
+**v0.3.0: ZUC-128 Stream Cipher**
+3. **ZUC-128 Implementation** ✅
+   - StreamCipher interface
+   - Complete ZUC-128 engine (400+ lines)
+   - S-boxes, LFSR, F function, bit reorganization
+   - All 13 tests passing (100%)
+   - Verified against fixed sm-js-bc (commit 0425fa0)
+   - Matches Bouncy Castle Java exactly
+
+**Documentation:**
+4. **Comprehensive Documentation**
    - API_CONSISTENCY_WITH_JAVA.md
    - API_IMPROVEMENTS_V0.2.0.md  
    - CHANGELOG.md
-   - ZUC issue documentation for sm-js-bc
+   - PKI_IMPLEMENTATION_PLAN.md
+   - ZUC_IMPLEMENTATION_PLAN.md
+   - SM_JS_BC_ZUC_ISSUE.md (resolved)
 
-4. **Test Results**
-   - 537/539 tests passing (99.6%)
-   - 2 ZUC tests skipped/failing (expected)
+**Test Results:**
+5. **Outstanding Quality Metrics**
+   - 539/540 tests passing (99.8%) ✅
+   - 1 test skipped (known GM/T issue)
    - 0 security vulnerabilities
+   - 100% backward compatible
 
-###  🔄 ZUC Implementation (Deferred)
-- ZUC-128 core algorithm: 98% complete
-- Algorithm structure matches Bouncy Castle Java
-- Test vectors not matching (likely sm-js-bc uses different implementation)
-- Documented in SM_JS_BC_ZUC_ISSUE.md
-- **Decision**: Skip for now, revisit in separate PR
+### 🎉 ZUC-128 Resolution
+
+sm-js-bc master branch was updated (commit 0425fa0) to fix ZUC implementation:
+- Corrected EK_d constants to full 16-bit values
+- Applied same fix to sm-py-bc (commit cd0849b)
+- All test vectors now match: `27bede74018082da` ✅
 
 ## Available Features from sm-js-bc v0.4.0
 

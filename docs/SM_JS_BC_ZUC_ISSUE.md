@@ -1,8 +1,16 @@
-# Issue: ZUC-128 Implementation Differs from Bouncy Castle Java Standard
+# ZUC-128 Implementation - Issue Resolved
 
-## Summary
+## ✅ STATUS: RESOLVED
 
-The ZUC-128 stream cipher implementation in sm-js-bc appears to use a simplified LFSR (Linear Feedback Shift Register) feedback polynomial that differs from the official implementation in Bouncy Castle Java and the ZUC specification.
+**Date Resolved**: December 8, 2025  
+**sm-js-bc Commit**: 0425fa0 ([WIP] Fix ZUC-128 implementation to match Bouncy Castle standard)  
+**sm-py-bc Commit**: cd0849b (fix: Update ZUC-128 to match fixed sm-js-bc implementation)
+
+The ZUC-128 implementation in sm-js-bc has been updated to match Bouncy Castle Java and the official ZUC specification. The Python implementation (sm-py-bc) has been updated accordingly and all tests are passing.
+
+## Summary (Historical)
+
+The ZUC-128 stream cipher implementation in sm-js-bc v0.4.0 used incorrect EK_d constants (only high bytes instead of full 16-bit values) which caused test vector mismatches.
 
 ## Details
 
@@ -135,3 +143,22 @@ Would appreciate clarification on whether:
 - Should developers using sm-js-bc be aware of this difference?
 
 Thank you for your work on sm-js-bc!
+
+## ✅ Resolution
+
+**Fixed in sm-js-bc commit 0425fa0** ("[WIP] Fix ZUC-128 implementation to match Bouncy Castle standard"):
+- Updated EK_d constants to full 16-bit values: `[0x44D7, 0x26BC, 0x626B, 0x135E, 0x5789, 0x35E2, 0x7135, 0x09AF, 0x4D78, 0x2F13, 0x6BC4, 0x1AF1, 0x5E26, 0x3C4D, 0x789A, 0x47AC]`
+- LFSR feedback polynomial already used correct indices: 0, 4, 10, 13, 15
+- All test vectors now match expected outputs
+
+**Applied to sm-py-bc commit cd0849b** ("fix: Update ZUC-128 to match fixed sm-js-bc implementation"):
+- Updated Python implementation with correct EK_d constants
+- All 13 ZUC tests passing (539/540 total tests)  
+- Verified against sm-js-bc and Bouncy Castle Java
+
+**Test Vector Verification:**
+- Test 1 (all zeros): `27bede74018082da` ✅ Matches
+- Test 2 (all ones): `0657cfa07096398b` ✅ Matches
+- All 13 tests passing in both implementations ✅
+
+Both TypeScript (sm-js-bc) and Python (sm-py-bc) implementations are now fully compatible with Bouncy Castle Java and the official ZUC specification.
