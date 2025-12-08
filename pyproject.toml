@@ -1,7 +1,7 @@
 [project]
 name = "sm-py-bc"
-version = "0.1.9"
-description = "SM2/SM3/SM4 implementation in Python based on Bouncy Castle"
+version = "0.3.0"
+description = "SM2/SM3/SM4/ZUC implementation in Python based on Bouncy Castle"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
