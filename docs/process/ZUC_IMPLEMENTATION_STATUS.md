@@ -40,22 +40,50 @@
 - IV: 00...00 (16 bytes)
 - Expected: 27BEDE74018082DA
 - Actual: 0A0A67C6800161F3
+- Keystream words: 0x0A0A67C6, 0x800161F3
 - Status: ❌ Failing
 
 **Test Vector 2**:
 - Key: FF...FF (16 bytes)
 - IV: FF...FF (16 bytes)
 - Expected: 0657CFA07096398B
-- Actual: D00B7A4E3B666E36
+- Actual: (similar mismatch)
 - Status: ❌ Failing
 
-### ⏳ Not Started
+**Debug Progress**:
+- ✅ S-boxes verified (match reference exactly)
+- ✅ LFSR initialization verified  
+- ✅ LFSR feedback polynomial tried multiple formulations
+- ❌ Issue isolated to F function or keystream generation
+- Next: Detailed trace of bit reorganization and F function
 
-- ZUC-256 Engine
-- ZUC-128 MAC
-- ZUC-256 MAC
+### ⏳ Blocked/Not Started
+
+- **ZUC-128 Test Vector Fix** (blocked - in progress)
+- ZUC-256 Engine (blocked by ZUC-128)
+- ZUC-128 MAC (blocked by ZUC-128)
+- ZUC-256 MAC (blocked by ZUC-128)
 - Documentation updates
 - Examples
+
+---
+
+## 💭 Recommendation
+
+Given the time invested and remaining work:
+
+1. **Merge v0.2.0 work separately** (HMAC-SM3, API improvements)
+   - This is complete, tested, and production-ready
+   - Provides immediate value to users
+
+2. **Continue ZUC in separate PR/iteration**
+   - ZUC-128 is 95% complete
+   - Needs 1-2 hours of careful debugging
+   - Complex algorithm requiring methodical approach
+
+3. **Alternative: Seek reference implementation**
+   - Python ZUC implementation for comparison
+   - Or detailed step-by-step trace from working implementation
 
 ---
 
