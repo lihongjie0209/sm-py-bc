@@ -380,10 +380,10 @@ class ZUCEngine(StreamCipher):
         
         w = (x0 ^ self.r1 ^ self.r2) & 0xFFFFFFFF
         w1 = (self.r1 + x1) & 0xFFFFFFFF
-        w2 = self.r2 ^ x2
+        w2 = (self.r2 ^ x2) & 0xFFFFFFFF
         
-        u = self._l1((w1 << 16) | (w2 >> 16))
-        v = self._l2((w2 << 16) | (w1 >> 16))
+        u = self._l1(((w1 << 16) | (w2 >> 16)) & 0xFFFFFFFF)
+        v = self._l2(((w2 << 16) | (w1 >> 16)) & 0xFFFFFFFF)
         
         self.r1 = self._s(u)
         self.r2 = self._s(v)
