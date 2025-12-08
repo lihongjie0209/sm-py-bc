@@ -31,6 +31,12 @@
 - 5 种加密模式：ECB、CBC、CTR、OFB、CFB
 - 4 种填充方案：PKCS#7、ISO 7816-4、ISO 10126、Zero-byte
 
+**ZUC - 祖冲之序列密码** (GM/T 0001-2012, 3GPP TS 35.221/222)
+- ZUC-128 和 ZUC-256 流密码引擎
+- 128-EIA3 和 256-EIA3 消息认证码
+- 3GPP LTE/5G 机密性和完整性算法
+- 支持可变长度 MAC 输出
+
 ### 🔒 安全特性
 
 - **零外部依赖** - 纯 Python 完整密码学实现
@@ -184,6 +190,68 @@ decrypted = engine.process_block(ciphertext, 0, len(ciphertext))
 assert plaintext == bytes(decrypted)
 ```
 
+### ZUC 流密码加密
+
+```python
+from sm_bc.crypto.engines import ZUCEngine, ZUC256Engine
+from sm_bc.crypto.params import KeyParameter, ParametersWithIV
+import secrets
+
+# ZUC-128 加密
+key = secrets.token_bytes(16)  # 128 位密钥
+iv = secrets.token_bytes(16)   # 128 位 IV
+
+cipher = ZUCEngine()
+cipher.init(True, ParametersWithIV(KeyParameter(key), iv))
+
+plaintext = b"Hello, ZUC-128!"
+ciphertext = bytearray(len(plaintext))
+cipher.process_bytes(plaintext, 0, len(plaintext), ciphertext, 0)
+
+# ZUC-256 加密（增强安全性）
+key256 = secrets.token_bytes(32)  # 256 位密钥
+iv256 = secrets.token_bytes(23)   # 184 位 IV
+
+cipher256 = ZUC256Engine(mac_bits=128)
+cipher256.init(True, ParametersWithIV(KeyParameter(key256), iv256))
+
+plaintext = b"Hello, ZUC-256!"
+ciphertext = bytearray(len(plaintext))
+cipher256.process_bytes(plaintext, 0, len(plaintext), ciphertext, 0)
+```
+
+### ZUC MAC 消息认证
+
+```python
+from sm_bc.crypto.macs import ZUC128MAC, ZUC256MAC
+from sm_bc.crypto.params import KeyParameter, ParametersWithIV
+import secrets
+
+# ZUC-128 MAC (128-EIA3) - 3GPP LTE/5G 完整性算法
+key = secrets.token_bytes(16)
+iv = secrets.token_bytes(16)
+
+mac = ZUC128MAC(mac_bits=32)  # 32 位或 64 位 MAC
+mac.init(ParametersWithIV(KeyParameter(key), iv))
+
+message = b"Message to authenticate"
+mac.update_bytes(message, 0, len(message))
+
+tag = bytearray(mac.get_mac_size())
+mac.do_final(tag, 0)
+
+# ZUC-256 MAC (256-EIA3) - 增强安全性
+key256 = secrets.token_bytes(32)
+iv256 = secrets.token_bytes(23)
+
+mac256 = ZUC256MAC(mac_bits=128)  # 64 位或 128 位 MAC
+mac256.init(ParametersWithIV(KeyParameter(key256), iv256))
+mac256.update_bytes(message, 0, len(message))
+
+tag256 = bytearray(mac256.get_mac_size())
+mac256.do_final(tag256, 0)
+```
+
 ---
 
 ## 📚 文档
@@ -242,10 +310,11 @@ pytest --cov=sm_bc tests/unit/
 ```
 
 **测试覆盖**:
-- 200+ 单元测试（100% 通过）
+- 580+ 单元测试（99.8% 通过）
 - SM2: 29 个测试（加密、签名、密钥操作）
 - SM3: 18 个测试（哈希、memoable 接口）
 - SM4: 18 个测试（分组密码操作）
+- ZUC: 58 个测试（ZUC-128/256 引擎和 MAC）
 - 密码模式: 60 个测试（CBC、CTR、OFB、CFB）
 - 填充: 40 个测试（所有方案、边界情况）
 
@@ -286,6 +355,7 @@ sm-py-bc/
 - `test_cbc_demo.py` - CBC 模式示例
 - `test_ctr_demo.py` - CTR 模式示例
 - `test_padding_demo.py` - 填充方案示例
+- `zuc_demo.py` - ZUC 流密码和 MAC 完整示例
 
 运行任何示例:
 ```bash

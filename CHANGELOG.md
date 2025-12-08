@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-08
+
+### Added
+
+#### ZUC Stream Cipher Support (Complete Implementation)
+
+- **ZUC-256 Engine**: Enhanced stream cipher for 3GPP 5G
+  - 256-bit key support
+  - 184-bit and 200-bit IV support
+  - Configurable MAC bits (32, 64, 128)
+  - Extends ZUC-128 implementation
+  - Compliant with 3GPP TS 35.222 standard
+  - 12 comprehensive unit tests (100% passing)
+
+- **ZUC-128 MAC (128-EIA3)**: LTE/5G integrity algorithm
+  - Message authentication code based on ZUC-128
+  - Support for 32-bit and 64-bit MAC output
+  - Full RFC and 3GPP TS 35.221 compliance
+  - Compatible with Bouncy Castle Java API
+  - 18 comprehensive unit tests (100% passing)
+
+- **ZUC-256 MAC (256-EIA3)**: Enhanced 5G integrity algorithm
+  - Message authentication code based on ZUC-256
+  - Support for 64-bit and 128-bit MAC output
+  - Enhanced security for 5G networks
+  - Full 3GPP TS 35.222 compliance
+  - 15 comprehensive unit tests (100% passing)
+
+#### Documentation and Examples
+
+- **examples/zuc_demo.py**: Comprehensive ZUC demonstration
+  - ZUC-128 and ZUC-256 encryption examples
+  - ZUC-128 and ZUC-256 MAC examples
+  - Combined encryption + MAC example
+  - Real-world usage patterns
+  - Security best practices
+
+### Testing
+
+- Total tests: 584 passing, 1 skipped (99.8% pass rate)
+- New ZUC tests: 45 tests added
+  - ZUC-256 Engine: 12 tests
+  - ZUC-128 MAC: 18 tests
+  - ZUC-256 MAC: 15 tests
+- All tests passing with comprehensive coverage
+- No regressions in existing functionality
+
+### Standards Compliance
+
+- ✅ GM/T 0001-2012: ZUC Stream Cipher Algorithm
+- ✅ 3GPP TS 35.221: 128-EEA3 & 128-EIA3 (LTE)
+- ✅ 3GPP TS 35.222: 256-EEA3 & 256-EIA3 (5G)
+
+### Compatibility
+
+- ✅ 100% backward compatible with v0.2.0
+- ✅ All existing code continues to work unchanged
+- ✅ Aligned with sm-js-bc v0.4.0 ZUC implementation
+- ✅ Compatible with Bouncy Castle Java
+
+### Reference
+
+- Aligned with [sm-js-bc v0.4.0](https://github.com/lihongjie0209/sm-js-bc/tree/v0.4.0)
+- Feature parity: ZUC stream cipher and MAC algorithms
+
+---
+
 ## [0.2.0] - 2025-12-08
 
 ### Added

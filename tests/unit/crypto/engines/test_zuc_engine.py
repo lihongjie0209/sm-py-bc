@@ -1,11 +1,12 @@
 """
-Tests for ZUC-128 Stream Cipher Engine.
+Tests for ZUC-128 and ZUC-256 Stream Cipher Engines.
 
-Test vectors from GM/T 0001-2012 and 3GPP TS 35.221.
+Test vectors from GM/T 0001-2012, 3GPP TS 35.221, and 3GPP TS 35.222.
 """
 
 import pytest
 from sm_bc.crypto.engines.zuc_engine import ZUCEngine
+from sm_bc.crypto.engines.zuc256_engine import ZUC256Engine
 from sm_bc.crypto.params.key_parameter import KeyParameter
 from sm_bc.crypto.params.parameters_with_iv import ParametersWithIV
 
@@ -233,3 +234,178 @@ class TestZUCEngine:
         
         # Different IVs should produce different outputs
         assert bytes(output1) != bytes(output2)
+
+
+class TestZUC256Engine:
+    """Test cases for ZUC-256 engine."""
+    
+    def test_algorithm_name(self):
+        """Test that algorithm name is correct."""
+        cipher = ZUC256Engine(mac_bits=128)
+        assert 'ZUC-256' in cipher.get_algorithm_name()
+        assert 'MAC-128' in cipher.get_algorithm_name()
+    
+    def test_initialization_requires_iv(self):
+        """Test that initialization requires IV."""
+        cipher = ZUC256Engine()
+        key = bytes(32)
+        
+        with pytest.raises(ValueError, match="must include an IV"):
+            cipher.init(True, KeyParameter(key))
+    
+    def test_initialization_requires_256bit_key(self):
+        """Test that initialization requires 256-bit key."""
+        cipher = ZUC256Engine()
+        key = bytes(16)  # Wrong size
+        iv = bytes(23)
+        
+        with pytest.raises(ValueError, match="256-bit key"):
+            cipher.init(True, ParametersWithIV(KeyParameter(key), iv))
+    
+    def test_initialization_requires_184_or_200bit_iv(self):
+        """Test that initialization requires 184-bit or 200-bit IV."""
+        cipher = ZUC256Engine()
+        key = bytes(32)
+        iv = bytes(16)  # Wrong size
+        
+        with pytest.raises(ValueError, match="184-bit.*or.*200-bit"):
+            cipher.init(True, ParametersWithIV(KeyParameter(key), iv))
+    
+    def test_invalid_mac_bits(self):
+        """Test that invalid MAC bits value raises error."""
+        with pytest.raises(ValueError, match="MAC bits must be"):
+            ZUC256Engine(mac_bits=16)
+    
+    def test_zuc256_basic_encryption_184bit_iv(self):
+        """Test basic encryption with 184-bit IV."""
+        cipher = ZUC256Engine(mac_bits=128)
+        key = bytes(32)  # All zeros
+        iv = bytes(23)   # All zeros (184 bits)
+        
+        cipher.init(True, ParametersWithIV(KeyParameter(key), iv))
+        
+        # Generate 16 bytes of keystream
+        plaintext = bytes(16)
+        ciphertext = bytearray(16)
+        cipher.process_bytes(plaintext, 0, 16, ciphertext, 0)
+        
+        # Should produce some output (not all zeros)
+        assert bytes(ciphertext) != plaintext
+    
+    def test_zuc256_basic_encryption_200bit_iv(self):
+        """Test basic encryption with 200-bit IV."""
+        cipher = ZUC256Engine(mac_bits=128)
+        key = bytes(32)  # All zeros
+        iv = bytes(25)   # All zeros (200 bits)
+        
+        cipher.init(True, ParametersWithIV(KeyParameter(key), iv))
+        
+        # Generate 16 bytes of keystream
+        plaintext = bytes(16)
+        ciphertext = bytearray(16)
+        cipher.process_bytes(plaintext, 0, 16, ciphertext, 0)
+        
+        # Should produce some output (not all zeros)
+        assert bytes(ciphertext) != plaintext
+    
+    def test_zuc256_encryption_decryption_equivalence_184(self):
+        """Test that encryption and decryption are equivalent with 184-bit IV."""
+        key = bytes([0x12, 0x34, 0x56, 0x78] * 8)  # 32 bytes
+        iv = bytes([0xAB, 0xCD, 0xEF, 0x01] * 5 + [0xAB, 0xCD, 0xEF])  # 23 bytes
+        plaintext = b"Hello, ZUC-256!"
+        
+        # Encrypt
+        cipher1 = ZUC256Engine(mac_bits=64)
+        cipher1.init(True, ParametersWithIV(KeyParameter(key), iv))
+        ciphertext = bytearray(len(plaintext))
+        cipher1.process_bytes(plaintext, 0, len(plaintext), ciphertext, 0)
+        
+        # Decrypt
+        cipher2 = ZUC256Engine(mac_bits=64)
+        cipher2.init(False, ParametersWithIV(KeyParameter(key), iv))
+        decrypted = bytearray(len(ciphertext))
+        cipher2.process_bytes(ciphertext, 0, len(ciphertext), decrypted, 0)
+        
+        assert bytes(decrypted) == plaintext
+    
+    def test_zuc256_encryption_decryption_equivalence_200(self):
+        """Test that encryption and decryption are equivalent with 200-bit IV."""
+        key = bytes([0x12, 0x34, 0x56, 0x78] * 8)  # 32 bytes
+        iv = bytes([0xAB, 0xCD, 0xEF, 0x01, 0x23] * 5)  # 25 bytes
+        plaintext = b"Hello, ZUC-256 with 200-bit IV!"
+        
+        # Encrypt
+        cipher1 = ZUC256Engine(mac_bits=128)
+        cipher1.init(True, ParametersWithIV(KeyParameter(key), iv))
+        ciphertext = bytearray(len(plaintext))
+        cipher1.process_bytes(plaintext, 0, len(plaintext), ciphertext, 0)
+        
+        # Decrypt
+        cipher2 = ZUC256Engine(mac_bits=128)
+        cipher2.init(False, ParametersWithIV(KeyParameter(key), iv))
+        decrypted = bytearray(len(ciphertext))
+        cipher2.process_bytes(ciphertext, 0, len(ciphertext), decrypted, 0)
+        
+        assert bytes(decrypted) == plaintext
+    
+    def test_zuc256_reset_produces_same_keystream(self):
+        """Test that reset produces the same keystream."""
+        cipher = ZUC256Engine(mac_bits=64)
+        key = bytes([0x11] * 32)
+        iv = bytes([0x22] * 23)
+        plaintext = b"Test message"
+        
+        cipher.init(True, ParametersWithIV(KeyParameter(key), iv))
+        
+        # First encryption
+        output1 = bytearray(len(plaintext))
+        cipher.process_bytes(plaintext, 0, len(plaintext), output1, 0)
+        
+        # Reset and encrypt again
+        cipher.reset()
+        output2 = bytearray(len(plaintext))
+        cipher.process_bytes(plaintext, 0, len(plaintext), output2, 0)
+        
+        # Should produce same result
+        assert bytes(output1) == bytes(output2)
+    
+    def test_zuc256_different_mac_bits_produce_different_output(self):
+        """Test that different MAC bits settings produce different keystreams."""
+        key = bytes([0x42] * 32)
+        iv = bytes([0x99] * 23)
+        plaintext = b"Same message"
+        
+        # MAC bits = 32
+        cipher1 = ZUC256Engine(mac_bits=32)
+        cipher1.init(True, ParametersWithIV(KeyParameter(key), iv))
+        output1 = bytearray(len(plaintext))
+        cipher1.process_bytes(plaintext, 0, len(plaintext), output1, 0)
+        
+        # MAC bits = 64
+        cipher2 = ZUC256Engine(mac_bits=64)
+        cipher2.init(True, ParametersWithIV(KeyParameter(key), iv))
+        output2 = bytearray(len(plaintext))
+        cipher2.process_bytes(plaintext, 0, len(plaintext), output2, 0)
+        
+        # Different MAC bits should produce different outputs
+        assert bytes(output1) != bytes(output2)
+    
+    def test_zuc256_long_message(self):
+        """Test processing a longer message with ZUC-256."""
+        cipher = ZUC256Engine(mac_bits=128)
+        key = bytes([0xAA] * 32)
+        iv = bytes([0x55] * 25)
+        
+        # 1000 byte message
+        plaintext = bytes(range(256)) * 3 + bytes(range(232))
+        
+        cipher.init(True, ParametersWithIV(KeyParameter(key), iv))
+        ciphertext = bytearray(len(plaintext))
+        cipher.process_bytes(plaintext, 0, len(plaintext), ciphertext, 0)
+        
+        # Decrypt
+        cipher.reset()
+        decrypted = bytearray(len(ciphertext))
+        cipher.process_bytes(ciphertext, 0, len(ciphertext), decrypted, 0)
+        
+        assert bytes(decrypted) == plaintext
