@@ -184,8 +184,11 @@ class HMac(Mac):
         Raises:
             DataLengthException: If the output buffer is too small
         """
-        if len(output) - offset < self.digest_size:
-            raise DataLengthException('Output buffer too small')
+        available = len(output) - offset
+        if available < self.digest_size:
+            raise DataLengthException(
+                f'Output buffer too small: need {self.digest_size} bytes, have {available}'
+            )
         
         # Complete the inner hash: H(K ⊕ ipad || message)
         self.digest.do_final(self.output_buf, self.block_length)

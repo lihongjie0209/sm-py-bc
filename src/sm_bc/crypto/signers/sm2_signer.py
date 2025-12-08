@@ -218,4 +218,5 @@ class SM2Signer:
             representation of the message hash, taken modulo n.
         """
         e = int.from_bytes(message, 'big')
-        return e % n if e >= n else e
+        # Only perform modulo if necessary (when e >= n)
+        return e if e < n else e % n
