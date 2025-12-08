@@ -209,10 +209,11 @@ class ZUCEngine(StreamCipher):
             key: 128-bit key
             iv: 128-bit IV
         """
-        # Constants for LFSR initialization
+        # Constants for LFSR initialization (from EK_d in Bouncy Castle)
+        # These are the high bytes of the EK_d shorts
         d = bytes([
-            0x44, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f
+            0x44, 0x26, 0x62, 0x13, 0x57, 0x35, 0x71, 0x09,
+            0x4D, 0x2F, 0x6B, 0x1A, 0x5E, 0x3C, 0x78, 0x47
         ])
         
         # Load key and IV into LFSR
@@ -225,11 +226,13 @@ class ZUCEngine(StreamCipher):
         
         # Run 32 iterations in initialization mode
         for _ in range(32):
-            w = self._f()
+            x0, x1, x2, _ = self._bit_reorganization()
+            w = self._f(x0, x1, x2)
             self._lfsr_with_init_mode(w >> 1)
         
         # Generate first keystream word (discard)
-        self._f()
+        x0, x1, x2, _ = self._bit_reorganization()
+        self._f(x0, x1, x2)
         self._lfsr_with_work_mode()
     
     def _make_u31(self, value: int) -> int:
@@ -241,50 +244,78 @@ class ZUCEngine(StreamCipher):
         """
         return value & 0x7FFFFFFF
     
+    def _add_m(self, a: int, b: int) -> int:
+        """
+        Addition in GF(2^31-1).
+        
+        In GF(2^31-1), if a + b >= 2^31, we need to add 1 (since 2^31 ≡ 1 mod 2^31-1).
+        This is implemented as: (c & 0x7FFFFFFF) + (c >> 31)
+        
+        Args:
+            a: First operand (31-bit)
+            b: Second operand (31-bit)
+            
+        Returns:
+            Sum in GF(2^31-1)
+        """
+        c = a + b
+        return (c & 0x7FFFFFFF) + (c >> 31)
+    
     def _lfsr_with_init_mode(self, u: int) -> None:
         """
         LFSR update in initialization mode with feedback.
         
+        Based on Bouncy Castle Java Zuc128CoreEngine.
+        Uses LFSR cells at indices 0, 4, 10, 13, 15.
+        
         Args:
             u: Feedback value from F function
         """
-        # Follows Bouncy Castle Java / sm-js-bc implementation
-        s16 = self.lfsr[15]
-        s0 = self.lfsr[0]
-        
-        v = self._make_u31(
-            (s0 << 8) ^ self._mul_by_pow2(s0, 20) ^
-            (s16 << 21) ^ self._mul_by_pow2(s16, 17) ^
-            self._mul_by_pow2(s16, 15)
-        )
-        
-        s16_mod = self._make_u31(s16 + u)
+        # Compute feedback using correct LFSR polynomial
+        f = self.lfsr[0]
+        v = self._mul_by_pow2(self.lfsr[0], 8)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[4], 20)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[10], 21)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[13], 17)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[15], 15)
+        f = self._add_m(f, v)
+        f = self._add_m(f, u)
         
         # Shift LFSR
         for i in range(15):
             self.lfsr[i] = self.lfsr[i + 1]
         
-        self.lfsr[15] = self._make_u31(v + s16_mod)
+        self.lfsr[15] = f
     
     def _lfsr_with_work_mode(self) -> None:
         """
         LFSR update in working mode (no external feedback).
-        """
-        # Follows Bouncy Castle Java / sm-js-bc implementation
-        s16 = self.lfsr[15]
-        s0 = self.lfsr[0]
         
-        v = self._make_u31(
-            (s0 << 8) ^ self._mul_by_pow2(s0, 20) ^
-            (s16 << 21) ^ self._mul_by_pow2(s16, 17) ^
-            self._mul_by_pow2(s16, 15)
-        )
+        Based on Bouncy Castle Java Zuc128CoreEngine.
+        Uses LFSR cells at indices 0, 4, 10, 13, 15.
+        """
+        # Compute feedback using correct LFSR polynomial
+        f = self.lfsr[0]
+        v = self._mul_by_pow2(self.lfsr[0], 8)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[4], 20)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[10], 21)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[13], 17)
+        f = self._add_m(f, v)
+        v = self._mul_by_pow2(self.lfsr[15], 15)
+        f = self._add_m(f, v)
         
         # Shift LFSR
         for i in range(15):
             self.lfsr[i] = self.lfsr[i + 1]
         
-        self.lfsr[15] = self._make_u31(v + s16)
+        self.lfsr[15] = f
     
     def _mul_by_pow2(self, x: int, k: int) -> int:
         """
@@ -369,16 +400,18 @@ class ZUCEngine(StreamCipher):
         """
         return ((x << n) | (x >> (32 - n))) & 0xFFFFFFFF
     
-    def _f(self) -> int:
+    def _f(self, x0: int, x1: int, x2: int) -> int:
         """
         Nonlinear function F.
+        
+        Args:
+            x0, x1, x2: Values from bit reorganization (BRC[0], BRC[1], BRC[2])
         
         Returns:
             32-bit output word W
         """
-        x0, x1, x2, x3 = self._bit_reorganization()
-        
-        w = (x0 ^ self.r1 ^ self.r2) & 0xFFFFFFFF
+        # Note: BC Java uses addition, not XOR, for W calculation
+        w = ((x0 ^ self.r1) + self.r2) & 0xFFFFFFFF
         w1 = (self.r1 + x1) & 0xFFFFFFFF
         w2 = (self.r2 ^ x2) & 0xFFFFFFFF
         
@@ -392,12 +425,14 @@ class ZUCEngine(StreamCipher):
     
     def _generate_key_stream(self) -> None:
         """Generate two keystream words (8 bytes total)."""
-        x3_1 = self._bit_reorganization()[3]
-        self.key_stream[0] = self._f() ^ x3_1
+        # Generate first word
+        x0, x1, x2, x3 = self._bit_reorganization()
+        self.key_stream[0] = self._f(x0, x1, x2) ^ x3
         self._lfsr_with_work_mode()
         
-        x3_2 = self._bit_reorganization()[3]
-        self.key_stream[1] = self._f() ^ x3_2
+        # Generate second word
+        x0, x1, x2, x3 = self._bit_reorganization()
+        self.key_stream[1] = self._f(x0, x1, x2) ^ x3
         self._lfsr_with_work_mode()
         
         self.key_stream_index = 0
