@@ -68,3 +68,66 @@ class TestSM3Digest:
         digest2.do_final(output2, 0)
         
         assert output1 == output2
+    
+    def test_reset_with_memoable(self):
+        """Test reset(Memoable) method overload for state restoration."""
+        # Create first digest and process some data
+        digest1 = SM3Digest()
+        digest1.update_bytes(b"abc", 0, 3)
+        
+        # Save the state
+        saved_state = digest1.copy()
+        
+        # Continue processing with digest1
+        digest1.update_bytes(b"def", 0, 3)
+        output1 = bytearray(32)
+        digest1.do_final(output1, 0)
+        
+        # Create second digest and restore to saved state
+        digest2 = SM3Digest()
+        digest2.update_bytes(b"xyz", 0, 3)  # Some different data
+        digest2.reset(saved_state)  # Restore to state after "abc"
+        
+        # Continue processing from saved state
+        digest2.update_bytes(b"def", 0, 3)
+        output2 = bytearray(32)
+        digest2.do_final(output2, 0)
+        
+        # Both should produce same result
+        assert output1 == output2
+        
+    def test_reset_without_parameter(self):
+        """Test that reset() without parameter still works (backward compatibility)."""
+        digest = SM3Digest()
+        digest.update_bytes(b"abc", 0, 3)
+        
+        # Reset to initial state
+        digest.reset()
+        
+        # Should be back to initial state
+        output = bytearray(32)
+        digest.do_final(output, 0)
+        expected = "1ab21d8355cfa17f8e61194831e81a8f22bec8c728fefb747ed035eb5082aa2b"
+        assert output.hex() == expected
+    
+    def test_reset_memoable_vs_reset_from_memoable(self):
+        """Test that reset(memoable) and reset_from_memoable() produce same results."""
+        # Create digest with some state
+        digest1 = SM3Digest()
+        digest1.update_bytes(b"test", 0, 4)
+        saved = digest1.copy()
+        
+        # Test reset(memoable)
+        digest2 = SM3Digest()
+        digest2.reset(saved)
+        output2 = bytearray(32)
+        digest2.do_final(output2, 0)
+        
+        # Test reset_from_memoable()
+        digest3 = SM3Digest()
+        digest3.reset_from_memoable(saved)
+        output3 = bytearray(32)
+        digest3.do_final(output3, 0)
+        
+        # Both methods should produce identical results
+        assert output2 == output3

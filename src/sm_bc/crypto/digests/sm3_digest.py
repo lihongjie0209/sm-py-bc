@@ -1,4 +1,4 @@
-from typing import Union, List, MutableSequence
+from typing import Union, List, MutableSequence, Optional
 from sm_bc.crypto.digests.general_digest import GeneralDigest
 from sm_bc.util.pack import Pack
 from sm_bc.util.memoable import Memoable
@@ -53,12 +53,28 @@ class SM3Digest(GeneralDigest):
         self.reset()
         return self.DIGEST_LENGTH
 
-    def reset(self) -> None:
-        super().reset()
-        self._v[:] = self.IV
-        self._x_off = 0
-        for i in range(16):
-            self._inwords[i] = 0
+    def reset(self, other: Optional[Memoable] = None) -> None:
+        """
+        Reset the digest back to its initial state, or restore from another state.
+        
+        Args:
+            other: Optional Memoable object to restore state from.
+                   If provided, restores this digest to the state of the other digest.
+                   If None, resets to initial state.
+        
+        This method provides compatibility with Bouncy Castle Java API where
+        reset() can take an optional Memoable parameter for state restoration.
+        """
+        if other is not None:
+            # Restore state from another Memoable object
+            self.reset_from_memoable(other)
+        else:
+            # Reset to initial state
+            super().reset()
+            self._v[:] = self.IV
+            self._x_off = 0
+            for i in range(16):
+                self._inwords[i] = 0
 
     def process_word(self, input_: Union[bytes, bytearray, List[int]], offset: int) -> None:
         self._inwords[self._x_off] = Pack.big_endian_to_int(input_, offset)
