@@ -209,16 +209,16 @@ class ZUCEngine(StreamCipher):
             key: 128-bit key
             iv: 128-bit IV
         """
-        # Constants for LFSR initialization (from EK_d in Bouncy Castle)
-        # These are the high bytes of the EK_d shorts
-        d = bytes([
-            0x44, 0x26, 0x62, 0x13, 0x57, 0x35, 0x71, 0x09,
-            0x4D, 0x2F, 0x6B, 0x1A, 0x5E, 0x3C, 0x78, 0x47
-        ])
+        # EK_d constants from Bouncy Castle Java (16-bit values)
+        # Used in LFSR initialization: (key[i] << 23) | (EK_d[i] << 8) | iv[i]
+        EK_d = [
+            0x44D7, 0x26BC, 0x626B, 0x135E, 0x5789, 0x35E2, 0x7135, 0x09AF,
+            0x4D78, 0x2F13, 0x6BC4, 0x1AF1, 0x5E26, 0x3C4D, 0x789A, 0x47AC
+        ]
         
         # Load key and IV into LFSR
         for i in range(16):
-            self.lfsr[i] = self._make_u31((key[i] << 23) | (d[i] << 8) | iv[i])
+            self.lfsr[i] = self._make_u31((key[i] << 23) | (EK_d[i] << 8) | iv[i])
         
         self.r1 = 0
         self.r2 = 0
