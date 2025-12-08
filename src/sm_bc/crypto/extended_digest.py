@@ -1,6 +1,7 @@
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from sm_bc.crypto.digest import Digest
 
+@runtime_checkable
 class ExtendedDigest(Digest, Protocol):
     """
     Extended interface for message digests that provide access to the internal byte length.

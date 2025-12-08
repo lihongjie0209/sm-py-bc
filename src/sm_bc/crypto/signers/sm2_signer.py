@@ -86,7 +86,8 @@ class SM2Signer:
         e_hash = bytearray(self.digest.get_digest_size())
         self.digest.do_final(e_hash, 0)
         
-        e = int.from_bytes(e_hash, 'big')
+        # Use calculate_e for consistency with Bouncy Castle Java API
+        e = self.calculate_e(n, bytes(e_hash))
         d = self.ec_key.d
         
         multiplier = self.create_base_point_multiplier()
@@ -128,7 +129,8 @@ class SM2Signer:
             
         e_hash = bytearray(self.digest.get_digest_size())
         self.digest.do_final(e_hash, 0)
-        e = int.from_bytes(e_hash, 'big')
+        # Use calculate_e for consistency with Bouncy Castle Java API
+        e = self.calculate_e(n, bytes(e_hash))
         
         t = (r + s) % n
         if t == 0:
@@ -178,4 +180,43 @@ class SM2Signer:
         digest.update_bytes(val.to_bytes(size, 'big'), 0, size)
         
     def create_base_point_multiplier(self) -> ECMultiplier:
+        """
+        Create the elliptic curve multiplier for base point operations.
+        
+        This protected method can be overridden by subclasses to provide
+        custom EC point multiplication implementations (e.g., for performance
+        optimization or specific algorithmic requirements).
+        
+        Returns:
+            ECMultiplier instance for base point multiplication.
+            
+        Note:
+            This method matches the Bouncy Castle Java API signature for
+            extensibility and compatibility.
+        """
         return SimpleMultiplier()
+    
+    def calculate_e(self, n: int, message: bytes) -> int:
+        """
+        Calculate the e value from message hash.
+        
+        This protected method converts the message hash (obtained from the digest)
+        into an integer value modulo n, as required by the SM2 signature algorithm.
+        
+        Args:
+            n: The order of the elliptic curve
+            message: The message hash bytes
+            
+        Returns:
+            Integer e value computed from the message hash
+            
+        Note:
+            This method matches the Bouncy Castle Java API signature:
+            `protected BigInteger calculateE(BigInteger n, byte[] message)`
+            
+            In the SM2 algorithm, e is typically computed as the integer
+            representation of the message hash, taken modulo n.
+        """
+        e = int.from_bytes(message, 'big')
+        # Only perform modulo if necessary (when e >= n)
+        return e if e < n else e % n
